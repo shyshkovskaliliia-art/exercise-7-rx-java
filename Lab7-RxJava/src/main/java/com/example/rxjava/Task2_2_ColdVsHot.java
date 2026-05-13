@@ -16,25 +16,37 @@ public class Task2_2_ColdVsHot {
                 "Колос 0:0 Олександрія"
         );
 
+        // Частина А: Холодний Observable (без затримок)
+        System.out.println("=== Частина А: Холодний Observable ===");
         Observable<String> cold = Observable.fromIterable(results)
-                .doOnNext(match -> System.out.println("[emit] " + match));
+                .doOnNext(match -> System.out.println("[EMIT] " + match));
 
-        // Частина А: холодний
-        System.out.println("=== Холодний Observable ===");
-        cold.subscribe(m -> System.out.println("Subscriber 1: " + m));
-        cold.subscribe(m -> System.out.println("Subscriber 2: " + m));
+        System.out.println("--- Підписник 1 ---");
+        cold.subscribe(m -> System.out.println("  [Sub1] " + m));
 
-        // Частина В: гарячий
-        System.out.println("\n=== Гарячий Observable ===");
-        ConnectableObservable<String> hot = cold.publish();
+        System.out.println("--- Підписник 2 ---");
+        cold.subscribe(m -> System.out.println("  [Sub2] " + m));
 
-        hot.subscribe(m -> System.out.println("Subscriber 1: " + m));
+        // Частина В: Гарячий Observable (з емуляцією часу через interval)
+        System.out.println("\n=== Частина В: Гарячий Observable ===");
+
+        ConnectableObservable<String> hot = Observable
+                .interval(500, TimeUnit.MILLISECONDS)
+                .map(i -> results.get(i.intValue()))
+                .take(results.size())
+                .doOnNext(match -> System.out.println("[EMIT] " + match))
+                .publish();
+
+        hot.subscribe(m -> System.out.println("  [Sub1] " + m));
+
+        System.out.println("[START] Початок випромінювання...");
         hot.connect();
 
         TimeUnit.SECONDS.sleep(2);
-        System.out.println("--- Підключення другого підписника через 2 сек ---");
-        hot.subscribe(m -> System.out.println("Subscriber 2: " + m));
+        System.out.println("--- Підключення Subscriber 2 через 2 сек ---");
+        hot.subscribe(m -> System.out.println("  [Sub2] " + m));
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.SECONDS.sleep(2);
+        System.out.println("[END] Завершення");
     }
 }
