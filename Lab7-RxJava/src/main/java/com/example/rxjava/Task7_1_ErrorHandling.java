@@ -20,7 +20,6 @@ public class Task7_1_ErrorHandling {
                         error -> System.out.println("Помилка: " + error.getMessage())
                 );
 
-        // Сценарій В: onErrorResumeNext
         System.out.println("\n=== onErrorResumeNext ===");
         Observable<String> currencyService2 = Observable.create(emitter -> {
             emitter.onNext("USD -> UAH: 41.50");
@@ -28,7 +27,6 @@ public class Task7_1_ErrorHandling {
             emitter.onError(new RuntimeException("Сервіс тимчасово недоступний"));
         });
 
-        // Потрібно передати функцію, яка отримує Throwable і повертає Observable
         currencyService2
                 .onErrorResumeNext(error -> Observable.just("JPY -> UAH: 0.27", "PLN -> UAH: 10.30"))
                 .subscribe(

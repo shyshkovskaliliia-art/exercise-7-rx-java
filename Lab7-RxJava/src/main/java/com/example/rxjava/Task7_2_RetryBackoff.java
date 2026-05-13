@@ -24,8 +24,8 @@ public class Task7_2_RetryBackoff {
                 .retryWhen(errors ->
                         errors.zipWith(Observable.range(1, 4), (error, retryCount) -> {
                             if (retryCount < 4) {
-                                long delay = (long) Math.pow(2, retryCount - 1) * 1000; // 1, 2, 4 сек
-                                System.out.println("Очікування " + delay + " мс перед повторною спробою...");
+                                long delay = (long) Math.pow(2, retryCount - 1) * 1000;
+                                System.out.println("Очікуємо " + (delay / 1000) + " сек перед повтором...");
                                 return Observable.timer(delay, TimeUnit.MILLISECONDS);
                             } else {
                                 return Observable.error(error);
@@ -33,11 +33,10 @@ public class Task7_2_RetryBackoff {
                         }).flatMap(x -> x)
                 )
                 .subscribe(
-                        result -> System.out.println("Результат: " + result),
-                        error -> System.out.println("Помилка після всіх спроб: " + error.getMessage()),
-                        () -> System.out.println("Завершено")
+                        result -> System.out.println(result),
+                        error -> System.out.println("Помилка після всіх спроб: " + error.getMessage())
                 );
 
-        Thread.sleep(10000); // даємо час на всі повтори
+        Thread.sleep(10_000);
     }
 }
