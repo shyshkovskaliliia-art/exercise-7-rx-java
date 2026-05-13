@@ -1,4 +1,4 @@
-package com.example.rxjava;                         // виправлено
+package main.java.com.example.rxjava;                         // виправлено
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
