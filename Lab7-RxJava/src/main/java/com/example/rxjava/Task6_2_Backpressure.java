@@ -1,4 +1,4 @@
-package main.java.com.example.rxjava;                         // виправлено
+package main.java.com.example.rxjava;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
@@ -13,6 +13,7 @@ public class Task6_2_Backpressure {
 
     public static void main(String[] args) throws InterruptedException {
         // Частина А: buffer
+        System.out.println("=== Частина А: Batch INSERT ===");
         List<String> eventList = List.of(
                 "LOGIN:user1", "CLICK:btn_buy", "VIEW:product_42",
                 "LOGIN:user2", "LOGOUT:user1", "CLICK:btn_cart",
@@ -21,20 +22,26 @@ public class Task6_2_Backpressure {
         );
 
         AtomicInteger batchNum = new AtomicInteger(1);
-        Observable.fromIterable(eventList)                    // <- виправлено
+        AtomicInteger totalEvents = new AtomicInteger(0);
+
+        Observable.fromIterable(eventList)
+                .doOnNext(event -> totalEvents.incrementAndGet())  // рахуємо всі події
                 .buffer(5)
                 .map(batch -> "[DB] Batch INSERT #" + batchNum.getAndIncrement() + ": " + batch)
-                .subscribe(System.out::println);
+                .subscribe(System.out::println,
+                        Throwable::printStackTrace,
+                        () -> System.out.println("(+) Збережено подій: " + totalEvents.get())
+                );
 
         // Частина В: Flowable з DROP
-        System.out.println("\n=== Flowable DROP ===");
+        System.out.println("\n=== Частина В: Flowable DROP ===");
         Flowable<Integer> fastProducer = Flowable.range(1, 1000);
 
         AtomicInteger processed = new AtomicInteger();
         AtomicInteger dropped = new AtomicInteger();
 
         fastProducer
-                .onBackpressureDrop(item -> dropped.incrementAndGet())   // <- виправлено
+                .onBackpressureDrop(item -> dropped.incrementAndGet())
                 .observeOn(Schedulers.io())
                 .subscribe(new Subscriber<Integer>() {
                     private Subscription sub;
@@ -42,17 +49,18 @@ public class Task6_2_Backpressure {
                     @Override
                     public void onSubscribe(Subscription s) {
                         this.sub = s;
-                        s.request(10); // обробляємо повільно
+                        s.request(1); // запитуємо по 1 елементу для повільної обробки
                     }
 
                     @Override
                     public void onNext(Integer i) {
                         try {
-                            TimeUnit.MILLISECONDS.sleep(10);
+                            TimeUnit.MILLISECONDS.sleep(10); // повільна обробка
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
                         processed.incrementAndGet();
+                        sub.request(1); // запитуємо наступний елемент
                     }
 
                     @Override
@@ -62,12 +70,12 @@ public class Task6_2_Backpressure {
 
                     @Override
                     public void onComplete() {
-                        System.out.println("[ЗВІТ] Оброблено: " + processed.get());
-                        System.out.println("[ЗВІТ] Відкинуто: " + dropped.get());
+                        System.out.println("[ЗВІТ] Оброблено: ~" + processed.get());
+                        System.out.println("[ЗВІТ] Відкинуто: ~" + dropped.get());
                         System.out.println("(!) Стратегія DROP: частину елементів втрачено");
                     }
                 });
 
-        Thread.sleep(5000); // чекаємо завершення асинхронної обробки
+        Thread.sleep(30_000);
     }
 }
